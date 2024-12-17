@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./Cont.module.css";
 
 interface Parking {
@@ -13,10 +13,10 @@ interface Parking {
 }
 
 const PARKING_STATE = {
-    CLOSE: "0",
-    OPEN: "1",
-    FULL: "2",
-    CROWD: "3"
+    CLOSE: 0,
+    OPEN: 1,
+    FULL: 2,
+    CROWD: 3
 }
 
 interface StateText {
@@ -25,51 +25,53 @@ interface StateText {
 }
 
 export default function Cont() {
-    const [parks, setParks] = useState<Parking[] | null>(null);
+    const [parks, setParks] = useState<Parking[]>([]);
     const [texts, setTexts] = useState<StateText[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchParking = async () => {
-            try{
-                const res = await fetch('http://localhost:1323/api/park');
-                if (!res.ok) {
-                    throw new Error(`HTTP error! Status: ${res.status}`)
-                }
-                const state: Parking[] = await res.json();
-                setParks(state);
-            } catch(error) {
-                setError((error as Error).message);
-            } finally {
-                setLoading(false);
+    const fetchParking = async () => {
+        try{
+            const res = await fetch('http://localhost:1323/api/park');
+            if (!res.ok) {
+                throw new Error(`HTTP error! Status: ${res.status}`)
             }
-        };
+            const state: Parking[] = await res.json();
+            setParks(state);
+        } catch(error) {
+            setError((error as Error).message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        const getStateText = () => {
-            const safeParks = parks ?? [];
-            
-            const newTexts = safeParks.map(park => {
-                switch (park.status) {
-                    case PARKING_STATE.CLOSE:
-                        return { STATE: "閉", COLOR: "#78909c" };
-                    case PARKING_STATE.OPEN:
-                        return { STATE: "空", COLOR: "#1976d2" };
-                    case PARKING_STATE.CROWD:
-                        return { STATE: "混", COLOR: "#cf5f3d" };
-                    case PARKING_STATE.FULL:
-                        return { STATE: "満", COLOR: "#f44336" };
-                    default:
-                        return { STATE: "?", COLOR: "#f44336" };
-                }
-            });
+    const getStateText = () => {       
+        console.log(parks);     
+        const newTexts = parks.map(park => {
+            switch (Number(park.status)) {
+                case PARKING_STATE.CLOSE:
+                    return { STATE: "閉", COLOR: "#78909c" };
+                case PARKING_STATE.OPEN:
+                    return { STATE: "空", COLOR: "#1976d2" };
+                case PARKING_STATE.CROWD:
+                    return { STATE: "混", COLOR: "#cf5f3d" };
+                case PARKING_STATE.FULL:
+                    return { STATE: "満", COLOR: "#f44336" };
+                default:
+                    return { STATE: "?", COLOR: "#f44336" };
+            }
+        });
 
-            setTexts(prevTexts => [...prevTexts, ...newTexts]);
-        };
+        setTexts(newTexts);
+    };
 
+    useEffect(() => {
         fetchParking();
-        getStateText();
     }, []);
+
+    useEffect(() => {
+        getStateText();
+    }, [parks]);
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p>Error: {error}</p>;
