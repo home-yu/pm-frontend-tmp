@@ -1,6 +1,6 @@
 import styles from "./page.module.css";
 
-import { Cont } from "./component/data";
+import { Cont } from "./components/data";
 
 export default function Home() {
   return (
